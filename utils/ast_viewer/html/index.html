@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <title>AST Viewer</title>
+
+    <!-- Bootstrap Core CSS -->
+    <link href="css/bootstrap.min.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="css/simple-sidebar.css" rel="stylesheet">
+
+    <style>
+  
+  .node {
+    cursor: pointer;
+  }
+
+  .node circle {
+    fill: #fff;
+    stroke: steelblue;
+    stroke-width: 3px;
+  }
+
+  .node text {
+    font: 12px sans-serif;
+  }
+
+  .link {
+    fill: none;
+    stroke: #ccc;
+    stroke-width: 2px;
+  }
+  
+    </style>
+
+</head>
+
+<body>
+
+    <div id="wrapper">
+
+        <!-- Sidebar -->
+        <div id="sidebar-wrapper">
+            <ul class="sidebar-nav" id="pyfiles_list">
+                <li>
+                    <a href="#">Dashboard</a>
+                </li>
+            </ul>
+        </div>
+        <!-- /#sidebar-wrapper -->
+
+        <!-- Page Content -->
+        <div id="page-content-wrapper">
+            <div class="container-fluid">
+                <div id="tree"></div>
+            </div>
+        </div>
+        <!-- /#page-content-wrapper -->
+
+    </div>
+    <!-- /#wrapper -->
+
+    <!-- jQuery -->
+    <script src="js/jquery-2.1.4.min.js"></script>
+    <!-- Bootstrap Core JavaScript -->
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/d3.min.js"></script>
+    <script src="js/tree.js"></script>
+
+    <!-- Menu Toggle Script -->
+<script>
+
+function getAst(file) {
+  $.get( "ast/" + file, function( data ) {
+    console.log("ast/" + file);
+    root = data;
+    root.x0 = width / 2;
+    root.y0 = 0;
+    update(root);
+  }).fail(function(err) {
+    alert('AST error')
+    console.log( "error: " + err);
+  });
+}
+
+$.get( "files", function( data ) {
+  $("#pyfiles_list").empty();
+
+  $.each(data, function(i, item) {
+    var el = $("<li><a href='#'>" + item + "</a></li>")
+              .click(function() {
+                getAst(item);
+              });
+    $("#pyfiles_list").append(el);
+  });
+
+}).fail(function(err) {
+  alert('AST error')
+  console.log( "error: " + err);
+});
+
+</script>
+
+</body>
+
+</html>
