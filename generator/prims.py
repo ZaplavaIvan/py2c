@@ -42,20 +42,41 @@ class FunctionMeta:
 
 class Context:
 
-    def __init__(self, meta=None):
-        if meta is None: meta = Meta()
+    def __init__(self):
+        self.stream = StringIO()
+
+    @property
+    def out(self):
+        return self._out.getvalue()
+
+
+class Block:
+
+    def __init__(self, meta, indent=4):
         self.meta = meta
-        self._indent_size = 0
-        self._out = ''
+        self.locals = []
+        self._indent = indent
+        self._out = ""
 
-    def indent_inc(self):
-        self._indent_size += 4
+    @staticmethod
+    def from_parent(parent):
+        blk = Block(parent.meta, parent.next_indent)
+        blk.locals = parent.locals
+        return blk
 
-    def indent_dec(self):
-        self._indent_size -= 4
+    @property
+    def next_indent(self):
+        return self._indent + 4
 
-    def indent(self):
-        return ' ' * self._indent_size
+    @property
+    def out(self):
+        return self._out
 
-    def write(self, data):
+    def new_line(self):
+        self._out += '\n';
+
+    def write(self, data, use_indent=True):
+        if use_indent and (len(self._out) == 0 or self._out[-1] == '\n'):
+            self._out += " " * self._indent
+
         self._out += data

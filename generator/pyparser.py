@@ -11,7 +11,7 @@ def prepare_meta(meta, mod, node):
     if isinstance(node, Function):
         args = map(lambda x: (x, get_func_argt(node, x)), node.argnames)
         rtype = get_func_argt(node, 'rtype')
-        is_ext = node.name in mod.__all__
+        is_ext = not hasattr(mod, '__all__') or node.name in mod.__all__
         meta.add_func(FunctionMeta(node.name, args, rtype, node.doc, is_ext))
 
     for child in filter(lambda x: isinstance(x, Node), node.getChildren()):
