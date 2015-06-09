@@ -2,10 +2,10 @@ import sys
 import os
 from os.path import join, dirname, basename, splitext
 
-from generator import pyparser, generator, pycompiler, wrapper
+from generator import pyparser, generator, pycompiler, wrapper, benchmark
 from optparse import OptionParser
 
-#sys.argv = sys.argv + ['-m', r'tests\simple_math.py', '-p', '-c']
+#sys.argv = sys.argv + ['-m', r'tests\test1.py', '-p', '-c']
 
 opt = OptionParser()
 opt.add_option("-m", "--module", dest="module")
@@ -30,3 +30,5 @@ if options.pyd:
     if options.compile:
         pycompiler.write_setup(module_name, [src_file, wrapper_file], out_dir)
         pycompiler.exec_setup(out_dir)
+
+benchmark.create(out_dir, meta, module_name)
