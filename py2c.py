@@ -29,6 +29,6 @@ if options.pyd:
 
     if options.compile:
         pycompiler.write_setup(module_name, [src_file, wrapper_file], out_dir)
-        pycompiler.exec_setup(out_dir)
+        pycompiler.exec_setup(module_name, out_dir)
 
 benchmark.create(out_dir, meta, module_name)
