@@ -109,6 +109,12 @@ def gen_expr(ctx, node):
         _child_gen(ctx, node)
 
         ctx.write(';\n')
+    elif cls is Continue:
+        ctx.write('continue;')
+        ctx.new_line()
+    elif cls is Break:
+        ctx.write('break;')
+        ctx.new_line()
     elif cls is If:
         children = get_children(node)
 
@@ -136,7 +142,7 @@ def gen_expr(ctx, node):
             ctx.write('{\n')
 
             blk = Block.from_parent(ctx)
-            gen_expr(blk, stmt_node)
+            gen_expr(blk, else_node)
             ctx.write(blk.out, False)
 
             ctx.write('}\n')
