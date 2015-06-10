@@ -1,3 +1,4 @@
+import os
 from os import system, getcwd, chdir
 from os.path import join
 
@@ -19,5 +20,12 @@ def write_setup(module_name, files, out_dir):
 def exec_setup(out_dir):
     cwd_backup =  getcwd()
     chdir(out_dir)
+
+    #EXTREMLY UGLY HACK. But we need a way to compile our code with any python/visual studio combination. At least in pre-alpha project stage.
+    if 'VS100COMNTOOLS' in os.environ:
+    	os.environ['VS90COMNTOOLS'] = os.environ['VS100COMNTOOLS']
+    if 'VS110COMNTOOLS' in os.environ:
+    	os.environ['VS90COMNTOOLS'] = os.environ['VS110COMNTOOLS']
+
     system('python setup.py build')
     chdir(cwd_backup)
