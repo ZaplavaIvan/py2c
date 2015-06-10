@@ -1,6 +1,7 @@
 import os
 import shutil
-from os import system, getcwd, chdir
+from subprocess import Popen, PIPE, STDOUT
+from os import getcwd, chdir
 from os.path import join
 
 TEMPLATE = """#GENERATED
@@ -29,12 +30,21 @@ def exec_setup(module_name, out_dir):
     if 'VS110COMNTOOLS' in os.environ:
         os.environ['VS90COMNTOOLS'] = os.environ['VS110COMNTOOLS']
 
-    exit_code = system('python setup.py build')
+    print 'Compile {0}.pyd...'.format(module_name)
+    print '    cwd: {0}'.format(out_dir)
 
-    if exit_code == 0:
+    command = Popen(['python', 'setup.py', 'build'], stdout=PIPE, stderr=STDOUT)
+    stdout, _ = command.communicate()
+
+    if command.returncode == 0:
         dirs = os.listdir('build')
         pyd_file = '{0}.pyd'.format(module_name)
         pyd_dst = join('build', dirs[0], pyd_file)
+        print '    status: success'
         shutil.copyfile(pyd_dst, pyd_file)
+        print '    copy {0} -> {1}'.format(pyd_dst, pyd_file)
+    else:
+        print '    status: failed'
+        print stdout
 
     chdir(cwd_backup)

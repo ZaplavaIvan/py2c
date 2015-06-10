@@ -31,6 +31,8 @@ if options.pyd:
         pycompiler.write_setup(module_name, [src_file, wrapper_file], out_dir)
         pycompiler.exec_setup(module_name, out_dir)
 
+print ''
+
 benchmark.create(out_dir, meta, module_name)
 
 autotest.create(out_dir, meta, module_name)
