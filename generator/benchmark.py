@@ -1,3 +1,4 @@
+from os import system, getcwd, chdir
 from os.path import join
 from prims import Meta
 import random
@@ -59,3 +60,12 @@ def create(out_dir, meta, module_name):
     f = open(join(out_dir, 'benchmark.py'), 'w+')
     f.write(data)
     f.close()
+
+
+def exec_benchmark(out_dir):
+    cwd_backup = getcwd()
+    chdir(out_dir)
+
+    system("python benchmark.py")
+
+    chdir(cwd_backup)

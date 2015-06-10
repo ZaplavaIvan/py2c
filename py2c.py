@@ -5,7 +5,8 @@ from os.path import join, dirname, basename, splitext
 from generator import pyparser, generator, pycompiler, wrapper, benchmark, autotest
 from optparse import OptionParser
 
-#sys.argv = sys.argv + ['-m', r'tests\test1.py', '-p', '-c']
+if len(sys.argv) == 1:
+    sys.argv.extend(['-m', r'tests\test1.py', '-p', '-c'])
 
 opt = OptionParser()
 opt.add_option("-m", "--module", dest="module")
@@ -33,7 +34,10 @@ if options.pyd:
 
 print ''
 
-benchmark.create(out_dir, meta, module_name)
-
 autotest.create(out_dir, meta, module_name)
 autotest.exec_test(out_dir)
+
+print ''
+
+benchmark.create(out_dir, meta, module_name)
+benchmark.exec_benchmark(out_dir)
