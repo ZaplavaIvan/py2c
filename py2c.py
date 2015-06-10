@@ -2,7 +2,7 @@ import sys
 import os
 from os.path import join, dirname, basename, splitext
 
-from generator import pyparser, generator, pycompiler, wrapper, benchmark
+from generator import pyparser, generator, pycompiler, wrapper, benchmark, autotest
 from optparse import OptionParser
 
 #sys.argv = sys.argv + ['-m', r'tests\test1.py', '-p', '-c']
@@ -32,3 +32,6 @@ if options.pyd:
         pycompiler.exec_setup(module_name, out_dir)
 
 benchmark.create(out_dir, meta, module_name)
+
+autotest.create(out_dir, meta, module_name)
+autotest.exec_test(out_dir)
