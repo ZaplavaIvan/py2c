@@ -52,6 +52,8 @@ class Context:
 
 class Block:
 
+    VAR_ID = 0
+
     def __init__(self, meta, indent=4):
         self.meta = meta
         self.locals = []
@@ -59,10 +61,19 @@ class Block:
         self._out = ""
 
     @staticmethod
+    def make_unique(var_name):
+        Block.VAR_ID += 1
+        return var_name + str(Block.VAR_ID)
+
+    @staticmethod
     def from_parent(parent):
         blk = Block(parent.meta, parent.next_indent)
         blk.locals = parent.locals
         return blk
+
+    @property
+    def base_indent(self):
+        return " "*4
 
     @property
     def next_indent(self):

@@ -171,6 +171,10 @@ def gen_expr(ctx, node):
         gen_expr(ctx, left)
         ctx.write(' || ')
         gen_expr(ctx, right)
+    elif cls is Not:
+        ctx.write('!(')
+        gen_expr(ctx, node.getChildren()[0])
+        ctx.write(')')
     elif cls is Name:
         ctx.write(node.name)
     elif cls is Assign:
@@ -217,18 +221,48 @@ def gen_expr(ctx, node):
         ctx.write(' {0} '.format(op))
         gen_expr(ctx, rnode)
     elif cls is While:
-        cond_node, body_node = get_children(node)
+        children = get_children(node)
+        cond_node = children[0]
+        body_node = children[1]
+        else_node = children[2] if len(children) > 2 else None
 
-        ctx.write('while(')
-        gen_expr(ctx, cond_node)
-        ctx.write(')\n')
-        ctx.write('{\n')
+        if else_node:
+            cond_var = Block.make_unique('cond_var')
+            ctx.write('bool {0} = '.format(cond_var))
+            gen_expr(ctx, cond_node)
+            ctx.write(';\n')
 
-        body_blk = Block.from_parent(ctx)
-        gen_expr(body_blk, body_node)
-        ctx.write(body_blk.out, False)
+            ctx.write('while({0})\n'.format(cond_var))
+            ctx.write('{\n')
 
-        ctx.write('}\n')
+            body_blk = Block.from_parent(ctx)
+            gen_expr(body_blk, body_node)
+            ctx.write(body_blk.out, False)
+
+            ctx.write(body_blk.base_indent + '{0} = '.format(cond_var))
+            gen_expr(ctx, cond_node)
+            ctx.write(';\n')
+            ctx.write('}\n')
+
+            ctx.write('if (!{0})\n'.format(cond_var))
+            ctx.write('{\n')
+
+            else_blk = Block.from_parent(ctx)
+            gen_expr(else_blk, else_node)
+            ctx.write(else_blk.out, False)
+
+            ctx.write('}\n')
+        else:
+            ctx.write('while(')
+            gen_expr(ctx, cond_node)
+            ctx.write(')\n')
+            ctx.write('{\n')
+
+            body_blk = Block.from_parent(ctx)
+            gen_expr(body_blk, body_node)
+            ctx.write(body_blk.out, False)
+
+            ctx.write('}\n')
     else:
         for child in filter(lambda x: isinstance(x, Node), node.getChildren()):
             gen_expr(ctx, child)
