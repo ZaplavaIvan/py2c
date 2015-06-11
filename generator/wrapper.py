@@ -1,5 +1,5 @@
 from os.path import join
-from prims import Context
+from prims import Meta
 from meta import IntT
 
 FUNC_WRAPPER_DECL_TEMPLATE = """{{"{ext_name}", {func_wrapper}, METH_VARARGS, "{doc}"}}"""
@@ -62,13 +62,13 @@ parse_code = {
 }
 
 
-def wrap_write(ctx, out_dir):
+def wrap_write(meta, out_dir):
     """
-    :type ctx: Context
+    :type meta: Meta
     :rtype: str
     """
-    main = wrap(ctx)
-    wrapper_name = ctx.meta.module_name + '_pywrap.cpp'
+    main = wrap(meta)
+    wrapper_name = meta.module_name + '_pywrap.cpp'
     f = open(join(out_dir, wrapper_name), 'w+')
     f.write(main)
     f.close()
@@ -76,15 +76,15 @@ def wrap_write(ctx, out_dir):
     return wrapper_name
 
 
-def wrap(ctx):
+def wrap(meta):
     """
-    :type ctx: Context
+    :type meta: Meta
     """
     func_wrappers_gen = []
     func_decl_gen = []
     extern_funcs = []
 
-    for m in filter(lambda x: x.is_ext, ctx.meta.funcs):
+    for m in filter(lambda x: x.is_ext, meta.funcs):
         wrapper_name = '{0}_wrapper'.format(m.name)
 
         if m.rtype is None:
@@ -117,7 +117,7 @@ def wrap(ctx):
 
     main = PYD_TEMPLATE.format(func_wrappers_list=''.join(func_wrappers_gen),
                                funcs_list=',\n    '.join(func_decl_gen),
-                               module_name=ctx.meta.module_name,
+                               module_name=meta.module_name,
                                extern_func_list='\n'.join(extern_funcs))
 
     return main

@@ -26,7 +26,7 @@ mod, tree, meta = pyparser.parse(abs_module_path)
 ctx, src_file = generator.generate_write(tree, meta, out_dir, module_name)
 
 if options.pyd:
-    wrapper_file = wrapper.wrap_write(ctx, out_dir)
+    wrapper_file = wrapper.wrap_write(meta, out_dir)
 
     if options.compile:
         pycompiler.write_setup(module_name, [src_file, wrapper_file], out_dir)
