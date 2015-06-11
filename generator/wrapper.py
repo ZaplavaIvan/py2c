@@ -1,5 +1,6 @@
 from os.path import join
 from prims import Context
+from meta import IntT
 
 FUNC_WRAPPER_DECL_TEMPLATE = """{{"{ext_name}", {func_wrapper}, METH_VARARGS, "{doc}"}}"""
 
@@ -57,7 +58,7 @@ main(int argc, char *argv[])
 """
 
 parse_code = {
-    'int': 'i',
+    IntT: 'i',
 }
 
 
@@ -86,10 +87,10 @@ def wrap(ctx):
     for m in filter(lambda x: x.is_ext, ctx.meta.funcs):
         wrapper_name = '{0}_wrapper'.format(m.name)
 
-        if m.rtype == 'None':
+        if m.rtype is None:
             pass
         else:
-            args_decl = '    '.join(map(lambda x: '{0} {1};\n'.format(x[1], x[0]), m.args))
+            args_decl = '    '.join(map(lambda x: '{0} {1};\n'.format(x[1].cpp_type, x[0]), m.args))
             args_code = ''.join(map(lambda x: parse_code[x[1]], m.args))
             args_refs = ', '.join(map(lambda x: '&{0}'.format(x[0]), m.args))
             args = ', '.join(map(lambda x: x[0], m.args))
@@ -100,11 +101,11 @@ def wrap(ctx):
                                                func_args_refs=args_refs,
                                                func_args=args,
                                                func_name=m.name,
-                                               rtype=m.rtype)
+                                               rtype=m.rtype.cpp_type)
             func_wrappers_gen.append(gen)
 
-            args_typed = ', '.join(map(lambda x: '{0} {1}'.format(x[1], x[0]), m.args))
-            extern = 'extern {rtype} {func_name}({func_args});'.format(rtype=m.rtype,
+            args_typed = ', '.join(map(lambda x: '{0} {1}'.format(x[1].cpp_type, x[0]), m.args))
+            extern = 'extern {rtype} {func_name}({func_args});'.format(rtype=m.rtype.cpp_type,
                                                                        func_name=m.name,
                                                                        func_args=args_typed)
             extern_funcs.append(extern)

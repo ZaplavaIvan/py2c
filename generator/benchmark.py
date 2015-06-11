@@ -3,6 +3,8 @@ from os.path import join
 from prims import Meta
 import random
 
+from meta import IntT, FloatT
+
 MAIN_TEMPLATE = """#{module_name} benchmark
 import timeit
 import sys
@@ -42,8 +44,8 @@ def create(out_dir, meta, module_name):
 
     for func in meta.funcs:
         values = {
-            'int': lambda: random.randint(0, 100),
-            'float': lambda: random.random() * 100
+            IntT: lambda: random.randint(0, 100),
+            FloatT: lambda: random.random() * 100
         }
         number = 10000
         args = ', '.join(map(lambda e: str(values[e[1]]()), func.args))

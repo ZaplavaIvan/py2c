@@ -5,7 +5,7 @@ import compiler
 from compiler.ast import *
 
 from prims import Meta, FunctionMeta
-
+from meta import match_type
 
 def prepare_meta(meta, mod, node):
     if isinstance(node, Function):
@@ -20,7 +20,7 @@ def prepare_meta(meta, mod, node):
 
 def get_func_argt(node, arg):
     """
-    :type func: Function
+    :type node: Node
     :type arg: str
     """
     if arg == 'rtype':
@@ -29,7 +29,7 @@ def get_func_argt(node, arg):
         pattern = '.*:type {0}: (?P<type>[.a-zA-Z]*)'.format(arg)
 
     match = re.match(pattern, node.doc, re.DOTALL)
-    return match.group('type') if match else None
+    return match_type(match.group('type')) if match else None
 
 
 def parse(module_path):

@@ -88,9 +88,9 @@ def gen_expr(ctx, node):
         func_meta = ctx.meta.get_func(func_name)
 
         pfx = 'static ' if not func_meta.is_ext else ''
-        pfx += func_meta.rtype
+        pfx += func_meta.rtype.cpp_type
 
-        args = ', '.join(map(lambda x: '{0} {1}'.format(x[1], x[0]), func_meta.args))
+        args = ', '.join(map(lambda x: '{0} {1}'.format(x[1].cpp_type, x[0]), func_meta.args))
 
         ctx.write('{pfx} {func_name}({args})\n'.format(pfx=pfx, func_name=func_name, args=args))
         ctx.write('{\n')
