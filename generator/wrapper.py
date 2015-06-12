@@ -1,6 +1,6 @@
 from os.path import join
 from prims import Meta
-from meta import IntT
+from meta import IntT, FloatT
 
 FUNC_WRAPPER_DECL_TEMPLATE = """{{"{ext_name}", {func_wrapper}, METH_VARARGS, "{doc}"}}"""
 
@@ -12,7 +12,7 @@ static PyObject *
     if (!PyArg_ParseTuple(args, "{func_args_code}", {func_args_refs})) return NULL;
 
     {rtype} res = {func_name}({func_args});
-    return PyLong_FromSize_t(res);
+    return {val_transformer};
 }}
 """
 
@@ -57,8 +57,14 @@ main(int argc, char *argv[])
 }}
 """
 
+TRANSFORMER = {
+    IntT: "PyLong_FromSize_t({0})",
+    FloatT: "PyFloat_FromDouble({0})"
+}
+
 parse_code = {
     IntT: 'i',
+    FloatT: 'f'
 }
 
 
@@ -94,6 +100,7 @@ def wrap(meta):
             args_code = ''.join(map(lambda x: parse_code[x[1]], m.args))
             args_refs = ', '.join(map(lambda x: '&{0}'.format(x[0]), m.args))
             args = ', '.join(map(lambda x: x[0], m.args))
+            transformer = TRANSFORMER[m.rtype].format('res')
 
             gen = FUNC_WRAPPER_TEMPLATE.format(func_wrapper_name=wrapper_name,
                                                func_args_decl=args_decl,
@@ -101,7 +108,8 @@ def wrap(meta):
                                                func_args_refs=args_refs,
                                                func_args=args,
                                                func_name=m.name,
-                                               rtype=m.rtype.cpp_type)
+                                               rtype=m.rtype.cpp_type,
+                                               val_transformer=transformer)
             func_wrappers_gen.append(gen)
 
             args_typed = ', '.join(map(lambda x: '{0} {1}'.format(x[1].cpp_type, x[0]), m.args))

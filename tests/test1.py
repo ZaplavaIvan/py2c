@@ -40,8 +40,23 @@ def func2(b, c):
         c = 100
 
     while b > 0:
-    	b -= 1
+        b -= 1
     else:
-    	c = 1
+        c = 1
 
     return b + c
+
+
+def func3(a, b, c):
+    """
+    :type a: int
+    :type b: float
+    :type c: float
+    :rtype: float
+    """
+    d = 0
+    s = 0.0
+    while d < 100:
+        d += 1
+        s += b / c
+    return s

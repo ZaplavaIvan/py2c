@@ -1,8 +1,8 @@
 import re
-
+import string
 from prims import Context, Block, Meta
 from compiler.ast import *
-
+from meta import IntT, FloatT
 
 def generate_write(ast_tree, meta, out_dir, module_name):
     from os.path import join
@@ -43,18 +43,11 @@ def _infer_type(ctx, node):
         func_meta = next(iter(filter(lambda x: x.name == func_name, ctx.meta.funcs)))
         return func_meta.rtype
     elif isinstance(node, Const):
-        try:
-            int(node.value)
-            return 'int'
-        except e:
-            pass
-        try:
-            float(node.value)
-            return 'float'
-        except e:
-            pass
-        return 'string'
-
+        const_type = node.value.__class__
+        if const_type is int:
+            return IntT
+        elif const_type is float:
+            return FloatT
     return None
 
 
@@ -183,7 +176,7 @@ def gen_expr(ctx, node):
 
         var_name = lvalue.name
         is_declared = var_name in ctx.locals
-        pfx = '{type} '.format(type=lvalue_type) if not is_declared else ''
+        pfx = '{type} '.format(type=lvalue_type.cpp_type) if not is_declared else ''
 
         if not is_declared:
             ctx.locals.append(var_name)
