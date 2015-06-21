@@ -2,7 +2,7 @@ import re
 import string
 from prims import Context, Block, Meta
 from compiler.ast import *
-from meta import IntT, FloatT
+from meta import get_types
 
 def generate_write(ast_tree, meta, out_dir, module_name):
     from os.path import join
@@ -21,9 +21,17 @@ def generate(ast_tree, meta):
     :type meta: Meta
     """
     blk = Block(meta, 0)
+    write_includes(blk)
     gen_expr(blk, ast_tree)
     return blk
 
+
+def write_includes(context):
+    for _, type in get_types():
+        for inc in type.cpp_include:
+            context.write('#include "{0}"'.format(inc))
+            context.new_line()
+    context.new_line()
 
 def _child_gen(ctx, parent):
     for child in filter(lambda x: isinstance(x, Node), parent.getChildren()):
@@ -185,15 +193,24 @@ def gen_expr(ctx, node):
         ctx.write(str(node.value))
     elif cls is Getattr:
         getattr_body, attr = node.getChildren()[0], node.getChildren()[1]
-        body_blk = Block.from_parent(ctx, ctx._indent)
-        gen_expr(body_blk, getattr_body)
-        ctx.write(body_blk.out, False)
 
-        ctx.write('.{0}'.format(attr))
+        if hasattr(node, 'meta') and node.meta.is_static:
+            accessor = "::"
+            ctx.write(node.meta.type.cpp_type)
+        else:
+            body_blk = Block.from_parent(ctx, ctx._indent)
+            gen_expr(body_blk, getattr_body)
+            ctx.write(body_blk.out, False)
+            accessor = "."
+
+        ctx.write('{accessor}{attr}'.format(accessor=accessor, attr=attr))
 
     elif cls is CallFunc:
         call_body = node.getChildren()[0]
         children = filter(lambda x: isinstance(x, Node), node.getChildren())[1:]
+
+        if hasattr(node, 'meta') and node.meta.is_explicit_namespace:
+            ctx.write('{0}::'.format(node.meta.namespace))
 
         body_blk = Block.from_parent(ctx, ctx._indent)
         gen_expr(body_blk, call_body)
@@ -270,11 +287,13 @@ if __name__ == "__main__":
     from os.path import join
     sys.path.append('../tests')
     import Math
-    Vector3 = meta.Type(Math.Vector3, 'Vector3', ['vector3.hpp'])
+    m = meta.Type(None, 'simplemath', ['simplemath.hpp'])
+    meta.register_type('math', m)
+    Vector3 = meta.Type(Math.Vector3, 'Vector3', ['Vector3.hpp'])
     meta.register_type('Vector3', Vector3)
-    Quaternion = meta.Type(Math.Quaternion, 'Quaternion', ['quaternion.hpp'])
+    Quaternion = meta.Type(Math.Quaternion, 'Quaternion', ['Quaternion.hpp'])
     meta.register_type('Quaternion', Quaternion)
 
-    module, tree, meta = pyparser.parse(join(os.getcwd(), '../tests/test1.py'))
+    module, tree, meta = pyparser.parse(join(os.getcwd(), '../tests/test2.py'))
     ctx = generate(tree, meta)
     print ctx.out

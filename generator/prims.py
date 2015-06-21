@@ -3,6 +3,7 @@ class Meta:
     def __init__(self):
         self.module_name = None
         self._funcs = {}
+        self.locals = {}
 
     @property
     def funcs(self):
@@ -42,6 +43,23 @@ class FunctionMeta:
 
     def get_var_type(self, var_name):
         return self.locals[var_name]
+
+
+class CallFuncMeta:
+
+    def __init__(self, t, is_explicit_namespace, namespace):
+        self.type = t
+        self.is_explicit_namespace = is_explicit_namespace
+        self.namespace = namespace
+
+
+class GetAttrMeta:
+
+    def __init__(self, is_static, t, is_explicit_namespace, namespace):
+        self.is_static = is_static
+        self.type = t
+        self.is_explicit_namespace = is_explicit_namespace
+        self.namespace = namespace
 
 
 class VarMeta:

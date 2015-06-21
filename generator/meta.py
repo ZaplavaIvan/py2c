@@ -24,3 +24,7 @@ def register_type(type_name, type):
 
 def match_type(str_type):
     return _matcher.get(str_type)
+
+
+def get_types():
+    return _matcher.items()

@@ -4,7 +4,7 @@ import imp
 import compiler
 from compiler.ast import *
 
-from prims import Meta, FunctionMeta, VarMeta
+from prims import Meta, FunctionMeta, VarMeta, CallFuncMeta, GetAttrMeta
 from meta import match_type, IntT, FloatT
 
 
@@ -17,6 +17,20 @@ def prepare_meta(meta, mod, node):
         prepare_func_meta(func_meta, node)
         node.meta = func_meta
         meta.add_func(func_meta)
+    elif isinstance(node, CallFunc):
+        call_node = node.getChildren()[0]
+        if isinstance(call_node, Name) and call_node.name in ['min', 'max']:
+            t = infer_type(meta, node.getChildren()[1])
+            meta = CallFuncMeta(t, True, 'std')
+            node.meta = meta
+    elif isinstance(node, Getattr):
+        var, _ = node.getChildren()[0], node.getChildren()[1]
+        if isinstance(var, Name):
+            type = match_type(var.name)
+            if type:
+                meta = GetAttrMeta(True, type, True, var.name)
+                node.meta = meta
+
 
     for child in filter(lambda x: isinstance(x, Node), node.getChildren()):
         prepare_meta(meta, mod, child)
@@ -49,7 +63,7 @@ def infer_type(meta, node):
         if isinstance(call_node, Name):
             type = infer_type(meta, call_node)
             if type is not None: return type
-            if call_node.name in ['min']:
+            if call_node.name in ['min', 'max']:
                 return infer_type(meta, node.getChildren()[1])
         else:
             return infer_type(meta, call_node)
