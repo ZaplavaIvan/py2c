@@ -34,10 +34,25 @@ class FunctionMeta:
 
     def __init__(self, func_name, args, rtype, doc, is_ext):
         self.name = func_name
+        self.locals = dict(args)
         self.args = args
         self.rtype = rtype
         self.doc = doc
         self.is_ext = is_ext
+
+    def get_var_type(self, var_name):
+        return self.locals[var_name]
+
+
+class VarMeta:
+
+    def __init__(self, name, t, is_declared):
+        self.name = name
+        self.type = t
+        self.is_declared = is_declared
+
+    def __repr__(self):
+        return 'VarMeta(name={0}, type={1}, is_declared={2})'.format(self.name, self.type, self.is_declared)
 
 
 class Context:
@@ -66,8 +81,8 @@ class Block:
         return var_name + str(Block.VAR_ID)
 
     @staticmethod
-    def from_parent(parent):
-        blk = Block(parent.meta, parent.next_indent)
+    def from_parent(parent, indent=None):
+        blk = Block(parent.meta, parent.next_indent if indent is None else indent)
         blk.locals = parent.locals
         return blk
 

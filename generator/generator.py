@@ -37,20 +37,6 @@ def _is_skippable(node):
     return False
 
 
-def _infer_type(ctx, node):
-    if isinstance(node, CallFunc):
-        func_name = node.getChildren()[0].name
-        func_meta = next(iter(filter(lambda x: x.name == func_name, ctx.meta.funcs)))
-        return func_meta.rtype
-    elif isinstance(node, Const):
-        const_type = node.value.__class__
-        if const_type is int:
-            return IntT
-        elif const_type is float:
-            return FloatT
-    return None
-
-
 def get_children(node):
     return filter(lambda e: not e is None, node.getChildren())
 
@@ -62,7 +48,7 @@ def transform_stmt(ctx, node):
 
         gen_expr(ctx, child)
 
-        if isinstance(child, (Assign, AugAssign)):
+        if isinstance(child, (Assign, AugAssign, Discard, Return)):
             ctx.write(';')
             ctx.new_line()
 
@@ -98,10 +84,10 @@ def gen_expr(ctx, node):
         transform_stmt(ctx, node)
     elif cls is Return:
         ctx.write('return ')
-
-        _child_gen(ctx, node)
-
-        ctx.write(';\n')
+        return_node = get_children(node)[0]
+        blk = Block.from_parent(ctx, 0)
+        gen_expr(blk, return_node)
+        ctx.write(blk.out, False)
     elif cls is Continue:
         ctx.write('continue;')
         ctx.new_line()
@@ -119,7 +105,9 @@ def gen_expr(ctx, node):
         for i, ifpack in enumerate(zip(if_stmts[:-1: 2], if_stmts[1::2])):
             if_node, stmt_node = ifpack
             ctx.write(('if' if i == 0 else 'else if') + ' (')
-            gen_expr(ctx, if_node)
+            blk = Block.from_parent(ctx, 0)
+            gen_expr(blk, if_node)
+            ctx.write(blk.out, False)
             ctx.write(')')
             ctx.new_line()
             ctx.write('{\n')
@@ -172,10 +160,10 @@ def gen_expr(ctx, node):
         ctx.write(node.name)
     elif cls is Assign:
         lvalue, rvalue = node.getChildren()
-        lvalue_type = _infer_type(ctx, rvalue)
+        lvalue_type = lvalue.meta.type
+        is_declared = lvalue.meta.is_declared
 
         var_name = lvalue.name
-        is_declared = var_name in ctx.locals
         pfx = '{type} '.format(type=lvalue_type.cpp_type) if not is_declared else ''
 
         if not is_declared:
@@ -183,7 +171,10 @@ def gen_expr(ctx, node):
 
         ctx.write(pfx + '{var}'.format(var=var_name))
         ctx.write(' = ')
-        gen_expr(ctx, rvalue)
+
+        assign_blk = Block.from_parent(ctx, 0)
+        gen_expr(assign_blk, rvalue)
+        ctx.write(assign_blk.out, False)
     elif cls is AugAssign:
         lvalue, op, rnode = node.getChildren()
 
@@ -192,16 +183,27 @@ def gen_expr(ctx, node):
         gen_expr(ctx, rnode)
     elif cls is Const:
         ctx.write(str(node.value))
+    elif cls is Getattr:
+        getattr_body, attr = node.getChildren()[0], node.getChildren()[1]
+        body_blk = Block.from_parent(ctx, ctx._indent)
+        gen_expr(body_blk, getattr_body)
+        ctx.write(body_blk.out, False)
+
+        ctx.write('.{0}'.format(attr))
+
     elif cls is CallFunc:
-        func_name = node.getChildren()[0]
+        call_body = node.getChildren()[0]
         children = filter(lambda x: isinstance(x, Node), node.getChildren())[1:]
 
-        ctx.write(func_name.name)
+        body_blk = Block.from_parent(ctx, ctx._indent)
+        gen_expr(body_blk, call_body)
+        ctx.write(body_blk.out, False)
+
         ctx.write('(')
 
         out = []
         for c in children:
-            tctx = Block(ctx.meta)
+            tctx = Block(ctx.meta, 0)
             gen_expr(tctx, c)
             out.append(tctx.out)
 
@@ -262,10 +264,17 @@ def gen_expr(ctx, node):
 
 if __name__ == "__main__":
     import pyparser
+    import meta
     import os
     import sys
     from os.path import join
     sys.path.append('../tests')
+    import Math
+    Vector3 = meta.Type(Math.Vector3, 'Vector3', ['vector3.hpp'])
+    meta.register_type('Vector3', Vector3)
+    Quaternion = meta.Type(Math.Quaternion, 'Quaternion', ['quaternion.hpp'])
+    meta.register_type('Quaternion', Quaternion)
+
     module, tree, meta = pyparser.parse(join(os.getcwd(), '../tests/test1.py'))
     ctx = generate(tree, meta)
     print ctx.out
