@@ -1,5 +1,6 @@
 #include "Vector3.hpp"
 #include "Quaternion.hpp"
+#include "simplemath.hpp"
 
 #include <iostream>
 using namespace std;
@@ -25,6 +26,8 @@ int main()
 	Vector3 proj = vec5.projectOntoPlane(Vector3(0, 1, 0));
 
 	cout << "Proj: (" << proj.x << ", " << proj.y << ", " << proj.z << ")" << endl;
+
+	cout<< simplemath::copysign(2, -1) << endl;
 
 	cin.ignore();
 
