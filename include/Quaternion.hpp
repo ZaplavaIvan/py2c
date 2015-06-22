@@ -1,4 +1,7 @@
+#pragma once
+
 #include <cmath>
+#include "Vector3.hpp"
 using namespace std;
 
 class Quaternion
