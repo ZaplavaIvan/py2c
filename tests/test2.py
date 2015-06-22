@@ -16,8 +16,8 @@ def smoothRotation(src, dest, dt, maxSpeed, zeroZone):
 
     axis = src.cross(dest)
     if destAngle > math.radians(90.0):
-        norm = dest - src
-        axis = Vector3(0, math.copysign(1, axis.y), 0).projectOntoPlane(norm)
+        normal = dest - src
+        axis = Vector3(0, math.copysign(1, axis.y), 0).projectOntoPlane(normal)
         axis.normalise()
     tempQuat = Quaternion()
     tempQuat.fromAngleAxis(angle, axis)

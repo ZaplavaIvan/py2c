@@ -190,7 +190,10 @@ def gen_expr(ctx, node):
         ctx.write(' {0} '.format(op))
         gen_expr(ctx, rnode)
     elif cls is Const:
-        ctx.write(str(node.value))
+        if node.value.__class__ == float:
+            ctx.write(str(node.value) + "f")
+        else:
+            ctx.write(str(node.value))
     elif cls is Getattr:
         getattr_body, attr = node.getChildren()[0], node.getChildren()[1]
 

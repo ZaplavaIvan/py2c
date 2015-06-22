@@ -31,7 +31,6 @@ def prepare_meta(meta, mod, node):
                 meta = GetAttrMeta(True, type, True, var.name)
                 node.meta = meta
 
-
     for child in filter(lambda x: isinstance(x, Node), node.getChildren()):
         prepare_meta(meta, mod, child)
 
@@ -80,6 +79,8 @@ def infer_type(meta, node):
             return IntT
         elif const_type is float:
             return FloatT
+    elif isinstance(node, Sub):
+        return infer_type(meta, node.getChildren()[0])
     return None
 
 
