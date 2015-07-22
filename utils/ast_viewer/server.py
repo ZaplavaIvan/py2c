@@ -4,7 +4,6 @@ import SimpleHTTPServer
 import SocketServer
 import StringIO
 import json
-import compiler
 
 from os.path import isfile, join
 from ast_serializer import serialize
@@ -15,6 +14,26 @@ SKIP_FILES = ['Math.py', '.*.pyc']
 
 def is_valid(file_name):
     return not any(map(lambda e: re.match(e, file_name), SKIP_FILES))
+
+
+def serialize_ast(file_name):
+    import compiler
+
+    output = StringIO.StringIO()
+    tree = compiler.parseFile(os.path.join(TESTS_FOLDER, file_name))
+    serialize(tree, 0, '', output.write)
+    return output.getvalue()
+
+
+def serialize_ast2(file_name):
+    import ast
+    from ast_serializer2 import serialize
+
+    data = open(join(TESTS_FOLDER, file_name)).read()
+    output = StringIO.StringIO()
+    tree = ast.parse(data)
+    serialize(tree, 0, '', output.write)
+    return output.getvalue()
 
 
 class RequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
@@ -30,12 +49,8 @@ class RequestHandler(SimpleHTTPServer.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith('/ast'):
             file_name = self.path.split('/')[-1]
-            output = StringIO.StringIO()
-            tree = compiler.parseFile(os.path.join(TESTS_FOLDER, file_name))
-            serialize(tree, 0, '', output.write)
-            res = output.getvalue()
-
-            self.write_json(res)
+            data = serialize_ast2(file_name)
+            self.write_json(data)
         elif self.path == '/files':
             files = filter(lambda e: is_valid(e) and isfile(join(TESTS_FOLDER, e)), os.listdir(TESTS_FOLDER))
             self.write_json(json.dumps(files))
