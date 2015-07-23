@@ -4,7 +4,9 @@ from ast import \
     Add, Sub, Mult, Div, Mod, Pow, LShift, RShift, BitOr, BitXor, BitAnd, FloorDiv, \
     Invert, Not, UAdd, USub, \
     Eq, NotEq, Lt, LtE, Gt, GtE, Is, IsNot, In, NotIn, \
-    Module, FunctionDef, While, For, If, Assign, AugAssign, Return, Name, Num, Compare, BinOp, UnaryOp, Break, Continue
+    UAdd, USub, Invert, BitAnd, BitOr, BitXor, \
+    Module, FunctionDef, While, For, If, Assign, AugAssign, Return, Name, Num, Compare, Break, Continue, \
+    operator, BoolOp, BinOp, UnaryOp
 
 
 def generate_write(ast_tree, meta, out_dir, module_name):
@@ -40,6 +42,34 @@ class PrintContext:
 
     def zero(self):
         return PrintContext(self.meta, 0)
+
+def cmp_operators(A, B):
+    """
+    :type A: operator
+    :type B: operator
+    :rtype: int
+    """
+
+    precedence = [
+        [Or],
+        [And],
+        [Lt, LtE, Gt, GtE, NotEq, Eq],
+        [BitOr],
+        [BitXor],
+        [BitAnd],
+        [RShift, LShift],
+        [Add, Sub],
+        [Mult, Div, Mod, FloorDiv],
+        [Invert, UAdd, USub],
+        [Pow]
+    ]
+    def get_priority(op):
+        for i, p in enumerate(precedence):
+            if op in p:
+                return i
+        return -1
+
+    return cmp(get_priority(A), get_priority(B))
 
 
 def print_operator(op):
@@ -88,7 +118,7 @@ def print_stmt(ctx, node):
         else:
             ending = "\n" if not isLast else ""
 
-        expr = print_expr(ctx, child)
+        expr = print_expr(ctx, child, node)
         if expr is None: continue
 
         data += "{expr}{ending}".format(expr=expr, ending=ending)
@@ -138,9 +168,9 @@ def print_while(ctx, node):
 {indent}}}
 """
         cond_var = ctx.make_unique('cond_var')
-        cond_expr = print_expr(ctx.zero(), test)
-        body_expr = print_expr(ctx.up(), body)
-        orelse_expr = print_expr(ctx.up(), orelse)
+        cond_expr = print_expr(ctx.zero(), test, node)
+        body_expr = print_expr(ctx.up(), body, node)
+        orelse_expr = print_expr(ctx.up(), orelse, node)
 
         return template.format(indent=ctx.indent,
                                cond_var=cond_var,
@@ -153,8 +183,8 @@ def print_while(ctx, node):
 {body_expr}
 {indent}}}
 """
-        cond_expr = print_expr(ctx.zero(), test)
-        body_expr = print_expr(ctx.up(), body)
+        cond_expr = print_expr(ctx.zero(), test, node)
+        body_expr = print_expr(ctx.up(), body, node)
 
         return template.format(indent=ctx.indent,
                                cond_expr=cond_expr,
@@ -181,8 +211,8 @@ def print_if(ctx, node):
 {indent}}}
 """
     return template.format(indent=ctx.indent,
-                           cond_expr=print_expr(ctx.zero(), test),
-                           body_expr=print_expr(ctx.up(), body))
+                           cond_expr=print_expr(ctx.zero(), test, node),
+                           body_expr=print_expr(ctx.up(), body, node))
 
 
 def print_assign(ctx, node):
@@ -196,12 +226,38 @@ def print_assign(ctx, node):
 
     template = "{indent}{target_type}{target_expr} = {value_expr};"
 
-    return template.format(target_expr=print_expr(ctx.zero(), targets[0]),
+    return template.format(target_expr=print_expr(ctx.zero(), targets[0], node),
                            target_type="",
-                           value_expr=print_expr(ctx.zero(), value),
+                           value_expr=print_expr(ctx.zero(), value, node),
                            indent=ctx.indent)
 
-def print_expr(ctx, node):
+def get_operator_shield(parent, op):
+    if isinstance(parent, (BinOp, UnaryOp, BoolOp)):
+        parent_op = parent.op
+        if cmp_operators(parent_op.__class__, op.__class__) > 0:
+            return "(", ")"
+    return "", ""
+
+def print_binop(ctx, left, op, right, node, parent):
+    template = "{l}{left_expr} {op} {right_expr}{r}"
+    l, r = get_operator_shield(parent, op)
+
+    return template.format(left_expr=print_expr(ctx.zero(), left, node),
+                           op=print_operator(op.__class__),
+                           right_expr=print_expr(ctx.zero(), right, node),
+                           l=l, r=r)
+
+def print_boolop(ctx, node, parent):
+    op, values = node.op, node.values
+    template = "{l}{body}{r}"
+    l, r = get_operator_shield(parent, op)
+    values_exprs = map(lambda e: print_expr(ctx, e, node), values)
+    separator = " {op} ".format(op=print_operator(op.__class__))
+    return template.format(body=separator.join(values_exprs),
+                           l=l,r=r)
+
+
+def print_expr(ctx, node, parent):
     cls = node.__class__
 
     if cls is Module:
@@ -219,12 +275,12 @@ def print_expr(ctx, node):
     elif cls is AugAssign:
         target, op, value = node.target, node.op, node.value
         template = "{indent}{left_expr} {op}= {right_expr};"
-        return template.format(left_expr=print_expr(ctx.zero(), target),
+        return template.format(left_expr=print_expr(ctx.zero(), target, node),
                                op=print_operator(op.__class__),
-                               right_expr=print_expr(ctx.zero(), value),
+                               right_expr=print_expr(ctx.zero(), value, node),
                                indent=ctx.indent)
     elif cls is Return:
-        return "{indent}return {value_expr};".format(indent=ctx.indent, value_expr=print_expr(ctx.zero(), node.value))
+        return "{indent}return {value_expr};".format(indent=ctx.indent, value_expr=print_expr(ctx.zero(), node.value, node))
     elif cls is Break:
         return "{indent}break;".format(indent=ctx.indent)
     elif cls is Continue:
@@ -236,17 +292,14 @@ def print_expr(ctx, node):
     elif cls is UnaryOp:
         op, operand = node.op, node.operand
         return "{op}({operand_expr})".format(op=print_operator(op.__class__),
-                                             operand_expr=print_expr(ctx.zero(), operand))
+                                             operand_expr=print_expr(ctx.zero(), operand, node))
     elif cls is BinOp:
-        left, op, right = node.left, node.op, node.right
-        return "{left_expr} {op} {right_expr}".format(left_expr=print_expr(ctx.zero(), left),
-                                                      op=print_operator(op.__class__),
-                                                      right_expr=print_expr(ctx.zero(), right))
+        return print_binop(ctx, node.left, node.op, node.right, node, parent)
+    elif cls is BoolOp:
+        return print_boolop(ctx, node, parent)
     elif cls is Compare:
         left, ops, comparators = node.left, node.ops, node.comparators
-        return "{left_expr} {op} {right_expr}".format(left_expr=print_expr(ctx.zero(), left),
-                                                      op=print_operator(ops[0].__class__),
-                                                      right_expr=print_expr(ctx.zero(), comparators[0]))
+        return print_binop(ctx, left, ops[0], comparators[0], node, parent)
     elif cls is list:
         return print_stmt(ctx, node)
     else:
@@ -263,4 +316,4 @@ if __name__ == '__main__':
     module, tree, meta = pyparser.parse(join(os.getcwd(), '../tests/test1.py'))
     tree = ast.parse(data)
     ctx = PrintContext(meta, 0)
-    print print_expr(ctx, tree)
+    print print_expr(ctx, tree, None)
