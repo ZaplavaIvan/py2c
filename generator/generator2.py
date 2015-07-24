@@ -198,21 +198,36 @@ def print_for(ctx, node):
     pass
 
 
-def print_if(ctx, node):
+def print_if(ctx, node, sibling=None):
     """
     :type node: If
     :rtype: string
     """
 
     test, body, orelse = node.test, node.body, node.orelse
-    template = """{indent}if({cond_expr})
+    template = """{indent}{clause}({cond_expr})
 {indent}{{
 {body_expr}
 {indent}}}
 """
-    return template.format(indent=ctx.indent,
+    clause = "if" if sibling is None else "elif"
+    head = template.format(indent=ctx.indent,
                            cond_expr=print_expr(ctx.zero(), test, node),
-                           body_expr=print_expr(ctx.up(), body, node))
+                           body_expr=print_expr(ctx.up(), body, node),
+                           clause=clause)
+    if not orelse:
+        return head
+
+    if isinstance(orelse[0], If):
+        return head + print_if(ctx, orelse[0], node)
+    else:
+        template = """{indent}else
+{indent}{{
+{body_expr}
+{indent}}}
+"""
+        return head + template.format(indent=ctx.indent,
+                                      body_expr=print_expr(ctx.up(), orelse, node))
 
 
 def print_assign(ctx, node):
