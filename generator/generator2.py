@@ -33,6 +33,10 @@ class PrintContext:
     def indent(self):
         return " "*self.indentSize
 
+    @property
+    def indent_up(self):
+        return " "*(self.indentSize + 4)
+
     def make_unique(self, var_name):
         self.VAR_ID += 1
         return var_name + str(self.VAR_ID)
@@ -161,6 +165,7 @@ def print_while(ctx, node):
 {indent}while({cond_var})
 {indent}{{
 {body_expr}
+{indent_up}{cond_var} = {cond_expr};
 {indent}}}
 {indent}if (!{cond_var})
 {indent}{{
@@ -173,6 +178,7 @@ def print_while(ctx, node):
         orelse_expr = print_expr(ctx.up(), orelse, node)
 
         return template.format(indent=ctx.indent,
+                               indent_up=ctx.indent_up,
                                cond_var=cond_var,
                                cond_expr=cond_expr,
                                body_expr=body_expr,
@@ -240,9 +246,10 @@ def print_assign(ctx, node):
     value = node.value
 
     template = "{indent}{target_type}{target_expr} = {value_expr};"
+    var_meta = targets[0].meta
 
     return template.format(target_expr=print_expr(ctx.zero(), targets[0], node),
-                           target_type="",
+                           target_type=("" if var_meta.is_declared else "%s "%var_meta.type.cpp_type),
                            value_expr=print_expr(ctx.zero(), value, node),
                            indent=ctx.indent)
 
@@ -321,14 +328,11 @@ def print_expr(ctx, node, parent):
         return None
 
 if __name__ == '__main__':
-    data = open('../tests/test1.py').read()
-
-    import pyparser
+    import pyparser2
     import meta
     import os
     from os.path import join
 
-    module, tree, meta = pyparser.parse(join(os.getcwd(), '../tests/test1.py'))
-    tree = ast.parse(data)
+    module, tree, meta = pyparser2.parse(join(os.getcwd(), '../tests/test1.py'))
     ctx = PrintContext(meta, 0)
     print print_expr(ctx, tree, None)
