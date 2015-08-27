@@ -10,14 +10,17 @@ def func1(a, b, c):
     while d < 100:
         d += 1
         a = 0
-        if d % 2 == 0:
-            x += a + b * c
+        if (d % 2) and (a < 10 and (a > 5 or a < 3)) and 3 == 3 or a == 1:
+            x += (a + b) * c
             continue
         elif d == 3 or d == 7:
             x *= 8
             break
+        elif d == 11 or d == 231:
+            x *= 8
         else:
             x -= a - b
+            x += 1
     return x
 
 
@@ -60,3 +63,10 @@ def func3(a, b, c):
         d += 1
         s += b / c
     return s
+
+
+def func4():
+    """
+    :rtype: int
+    """
+    return func1(1, 2, 3) + func2(3, 4)
