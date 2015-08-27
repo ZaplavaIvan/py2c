@@ -6,7 +6,7 @@ from ast import \
     Eq, NotEq, Lt, LtE, Gt, GtE, Is, IsNot, In, NotIn, \
     UAdd, USub, Invert, BitAnd, BitOr, BitXor, \
     Module, FunctionDef, While, For, If, Assign, AugAssign, Return, Name, Num, Compare, Break, Continue, \
-    operator, BoolOp, BinOp, UnaryOp
+    operator, BoolOp, BinOp, UnaryOp, Expr, Call
 
 
 def generate_write(ast_tree, meta, out_dir, module_name):
@@ -278,6 +278,13 @@ def print_boolop(ctx, node, parent):
     return template.format(body=separator.join(values_exprs),
                            l=l,r=r)
 
+def print_func_call(ctx, node):
+    func, args = node.func, node.args
+    args_exprs = map(lambda e: print_expr(ctx, e, node), args)
+    template = "{func_name}({args})"
+    return template.format(func_name=print_expr(ctx, func, node),
+                           args=', '.join(args_exprs))
+
 
 def print_expr(ctx, node, parent):
     cls = node.__class__
@@ -324,8 +331,12 @@ def print_expr(ctx, node, parent):
         return print_binop(ctx, left, ops[0], comparators[0], node, parent)
     elif cls is list:
         return print_stmt(ctx, node)
+    elif cls is Call:
+        return print_func_call(ctx, node)
+    elif cls is Expr:
+        pass
     else:
-        return None
+        pass
 
 if __name__ == '__main__':
     import pyparser2
