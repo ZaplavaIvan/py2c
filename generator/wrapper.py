@@ -4,13 +4,16 @@ from meta import IntT, FloatT
 
 FUNC_WRAPPER_DECL_TEMPLATE = """{{"{ext_name}", {func_wrapper}, METH_VARARGS, "{doc}"}}"""
 
+ARGS_PARSER_TEMPLATE = """
+    {func_args_decl}
+    if (!PyArg_ParseTuple(args, "{func_args_code}", {func_args_refs})) return NULL;
+"""
+
+
 FUNC_WRAPPER_TEMPLATE = """
 static PyObject *
 {func_wrapper_name}(PyObject *self, PyObject *args)
-{{
-    {func_args_decl}
-    if (!PyArg_ParseTuple(args, "{func_args_code}", {func_args_refs})) return NULL;
-
+{{  {args_parser}
     {rtype} res = {func_name}({func_args});
     return {val_transformer};
 }}
@@ -20,13 +23,8 @@ FUNC_VOID_WRAPPER_TEMPLATE = """
 
 static PyObject *
 {func_wrapper_name}(PyObject *self, PyObject *args)
-{{
-    {func_args_decl}
-
-    if (!PyArg_ParseTuple(args, "{func_args_code}", {func_args_refs})) return NULL;
-
+{{  {args_parser}
     {func_name}({func_args});
-
     Py_RETURN_NONE;
 }}
 
@@ -102,10 +100,15 @@ def wrap(meta):
             args = ', '.join(map(lambda x: x[0], m.args))
             transformer = TRANSFORMER[m.rtype].format('res')
 
+            if len(args) > 0:
+                args_parser = ARGS_PARSER_TEMPLATE.format(func_args_decl=args_decl,
+                                                          func_args_code=args_code,
+                                                          func_args_refs=args_refs)
+            else:
+                args_parser = ''
+
             gen = FUNC_WRAPPER_TEMPLATE.format(func_wrapper_name=wrapper_name,
-                                               func_args_decl=args_decl,
-                                               func_args_code=args_code,
-                                               func_args_refs=args_refs,
+                                               args_parser=args_parser,
                                                func_args=args,
                                                func_name=m.name,
                                                rtype=m.rtype.cpp_type,
