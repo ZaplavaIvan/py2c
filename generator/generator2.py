@@ -13,7 +13,7 @@ def generate_write(ast_tree, meta, out_dir, module_name):
     from os.path import join
 
     ctx = PrintContext(meta, 0)
-    data = print_expr(ctx, ast_tree)
+    data = print_expr(ctx, ast_tree, None)
     out_file = module_name + ".cpp"
     f = open(join(out_dir, out_file), 'w+')
     f.write(data)
@@ -211,12 +211,12 @@ def print_if(ctx, node, sibling=None):
     """
 
     test, body, orelse = node.test, node.body, node.orelse
-    template = """{indent}{clause}({cond_expr})
+    template = """{indent}{clause} ({cond_expr})
 {indent}{{
 {body_expr}
 {indent}}}
 """
-    clause = "if" if sibling is None else "elif"
+    clause = "if" if sibling is None else "else if"
     head = template.format(indent=ctx.indent,
                            cond_expr=print_expr(ctx.zero(), test, node),
                            body_expr=print_expr(ctx.up(), body, node),
