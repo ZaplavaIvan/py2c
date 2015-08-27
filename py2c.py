@@ -3,11 +3,11 @@ import os
 import imp
 from os.path import join, dirname, basename, splitext, split
 
-from generator import pyparser, generator, pycompiler, wrapper, benchmark, autotest, meta
+from generator import pyparser2 as pyparser, generator2 as generator, pycompiler, wrapper, benchmark, autotest, meta
 from optparse import OptionParser
 
 if len(sys.argv) == 1:
-    sys.argv.extend(['-m', r'tests\test2.py', '-c', r'tests\test2_context.py'])
+    sys.argv.extend(['--pyd', '--autotest', '--benchmark', '--build', '-m', r'tests\test1.py', '-c', r'tests\test2_context.py'])
 
 opt = OptionParser()
 opt.add_option("-m", "--module", dest="module")
